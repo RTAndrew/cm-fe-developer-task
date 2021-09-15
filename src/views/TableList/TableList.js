@@ -11,6 +11,7 @@ import CardHeader from "components/Card/CardHeader.js";
 import CardBody from "components/Card/CardBody.js";
 
 import HumanResourcesData from "assets/data/HR.json";
+import { useHistory, useLocation } from "react-router-dom";
 
 const styles = {
   cardCategoryWhite: {
@@ -47,6 +48,9 @@ const useStyles = makeStyles(styles);
 export default function TableList() {
   const classes = useStyles();
 
+  const history = useHistory();
+  const location = useLocation();
+
   const [error, setError] = useState(false);
   const [loading, setLoading] = useState(false);
   const [selectedEntity, setSelectedEntity] = useState(null);
@@ -54,6 +58,7 @@ export default function TableList() {
   const [randomUsers, setRandomUsers] = useState(null);
   const [loadingHRDepartments, setLoadingHRDepartments] = useState(false);
   const [errorLoadingHRDepartments, setErrorLoadingHRDepartments] = useState(false);
+  const [selectedRow, setSelectedRow] = useState(null);
 
   const fetchHumanResourceData = useCallback(async () => {
     try {
@@ -99,6 +104,22 @@ export default function TableList() {
 
   const onSelectedEntity = useCallback((entity) => {
     setSelectedEntity(entity);
+
+    if (entity === null) return;
+    history.replace({
+      pathname: location.pathname,
+      search: `?employee=${entity[0]}&department=${entity[1]}`,
+    });
+  }, []);
+
+  const onDeselectedEntity = useCallback((entity) => {
+    setSelectedEntity(null);
+    setSelectedRow(null);
+
+    history.replace({
+      pathname: location.pathname,
+      search: "",
+    });
   }, []);
 
   useEffect(() => {
@@ -106,9 +127,13 @@ export default function TableList() {
   }, [fetchHumanResourceData]);
 
   useEffect(() => {
-    if (!selectedEntity) return;
-    fetchRandomUser(selectedEntity[1]);
-  }, [selectedEntity]);
+    if (!location.search) return;
+
+    const entity = new URLSearchParams(location.search).get("employee");
+    const department = new URLSearchParams(location.search).get("department");
+    setSelectedRow(entity);
+    fetchRandomUser(department);
+  }, [location]);
 
   if (loading) return "loading...";
   if (error) return "oops! Something went wrong...";
@@ -125,8 +150,10 @@ export default function TableList() {
             <CardBody>
               <Table
                 tableHeaderColor="primary"
+                selectedRow={selectedRow}
                 tableData={humanResourcesData}
                 onSelectedEntity={onSelectedEntity}
+                onDeselectedEntity={onDeselectedEntity}
                 tableHead={["Name", "Department", "Location"]}
               />
             </CardBody>
@@ -139,9 +166,8 @@ export default function TableList() {
             <h4 className={classes.cardTitleWhite}>Table on Plain Background</h4>
             <p className={classes.cardCategoryWhite}>Here is a subtitle for this table</p>
           </CardHeader>
+          {errorLoadingHRDepartments && "Oops! Something went wrong"}
           <CardBody>
-            {errorLoadingHRDepartments && "Oops! Something went wrong"}
-
             {loadingHRDepartments ? (
               "loading..."
             ) : (
