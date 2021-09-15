@@ -1,4 +1,5 @@
-import React from "react";
+/* eslint-disable prettier/prettier */
+import React, { useCallback, useEffect, useState } from "react";
 // @material-ui/core components
 import { makeStyles } from "@material-ui/core/styles";
 // core components
@@ -8,6 +9,8 @@ import Table from "components/Table/Table.js";
 import Card from "components/Card/Card.js";
 import CardHeader from "components/Card/CardHeader.js";
 import CardBody from "components/Card/CardBody.js";
+
+import HumanResourcesData from "assets/data/HR.json";
 
 const styles = {
   cardCategoryWhite: {
@@ -43,41 +46,70 @@ const useStyles = makeStyles(styles);
 
 export default function TableList() {
   const classes = useStyles();
+
+  const [error, setError] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [humanResourcesData, setHumanResourcesData] = useState(null);
+  const [selectedEntity, setSelectedEntity] = useState(null);
+
+  const fetchHumanResourceData = useCallback(async () => {
+    try {
+      setError(false);
+      setLoading(true);
+
+      const data = await Promise.resolve(HumanResourcesData);
+
+      // MUI Table accepts and of Stirng
+      const formatData = data.departments.map((v) => [
+        `${v.manager.name.first} ${v.manager.name.last}`,
+        `${v.department.slice(0, 1).toUpperCase()}${v.department.slice(1)}`,
+        v.location,
+      ]);
+      setHumanResourcesData(formatData);
+    } catch (error) {
+      setError(true);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const onSelectedEntity = (entity) => {
+    setSelectedEntity(entity);
+  };
+
+  useEffect(() => {
+    fetchHumanResourceData();
+    console.log("-----------------");
+  }, [fetchHumanResourceData]);
+
+  if (loading) return "loading...";
+  if (error) return "oops! Something went wrong...";
+
   return (
     <GridContainer>
       <GridItem xs={12} sm={12} md={12}>
-        <Card>
-          <CardHeader color="primary">
-            <h4 className={classes.cardTitleWhite}>Simple Table</h4>
-            <p className={classes.cardCategoryWhite}>
-              Here is a subtitle for this table
-            </p>
-          </CardHeader>
-          <CardBody>
-            <Table
-              tableHeaderColor="primary"
-              tableHead={["Name", "Country", "City", "Salary"]}
-              tableData={[
-                ["Dakota Rice", "Niger", "Oud-Turnhout", "$36,738"],
-                ["Minerva Hooper", "Curaçao", "Sinaai-Waas", "$23,789"],
-                ["Sage Rodriguez", "Netherlands", "Baileux", "$56,142"],
-                ["Philip Chaney", "Korea, South", "Overland Park", "$38,735"],
-                ["Doris Greene", "Malawi", "Feldkirchen in Kärnten", "$63,542"],
-                ["Mason Porter", "Chile", "Gloucester", "$78,615"],
-              ]}
-            />
-          </CardBody>
-        </Card>
+        {humanResourcesData && (
+          <Card>
+            <CardHeader color="primary">
+              <h4 className={classes.cardTitleWhite}> Connect Mor Test </h4>
+              <p className={classes.cardCategoryWhite}>In this section</p>
+            </CardHeader>
+            <CardBody>
+              <Table
+                tableHeaderColor="primary"
+                tableData={humanResourcesData}
+                onSelectedEntity={onSelectedEntity}
+                tableHead={["Name", "Department", "Location"]}
+              />
+            </CardBody>
+          </Card>
+        )}
       </GridItem>
       <GridItem xs={12} sm={12} md={12}>
         <Card plain>
           <CardHeader plain color="primary">
-            <h4 className={classes.cardTitleWhite}>
-              Table on Plain Background
-            </h4>
-            <p className={classes.cardCategoryWhite}>
-              Here is a subtitle for this table
-            </p>
+            <h4 className={classes.cardTitleWhite}>Table on Plain Background</h4>
+            <p className={classes.cardCategoryWhite}>Here is a subtitle for this table</p>
           </CardHeader>
           <CardBody>
             <Table
@@ -87,20 +119,8 @@ export default function TableList() {
                 ["1", "Dakota Rice", "$36,738", "Niger", "Oud-Turnhout"],
                 ["2", "Minerva Hooper", "$23,789", "Curaçao", "Sinaai-Waas"],
                 ["3", "Sage Rodriguez", "$56,142", "Netherlands", "Baileux"],
-                [
-                  "4",
-                  "Philip Chaney",
-                  "$38,735",
-                  "Korea, South",
-                  "Overland Park",
-                ],
-                [
-                  "5",
-                  "Doris Greene",
-                  "$63,542",
-                  "Malawi",
-                  "Feldkirchen in Kärnten",
-                ],
+                ["4", "Philip Chaney", "$38,735", "Korea, South", "Overland Park"],
+                ["5", "Doris Greene", "$63,542", "Malawi", "Feldkirchen in Kärnten"],
                 ["6", "Mason Porter", "$78,615", "Chile", "Gloucester"],
               ]}
             />
