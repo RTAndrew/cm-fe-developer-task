@@ -1,4 +1,5 @@
-import React from "react";
+/* eslint-disable prettier/prettier */
+import React, { useCallback, useEffect, useState } from "react";
 // @material-ui/core components
 import { makeStyles } from "@material-ui/core/styles";
 // core components
@@ -8,6 +9,12 @@ import Table from "components/Table/Table.js";
 import Card from "components/Card/Card.js";
 import CardHeader from "components/Card/CardHeader.js";
 import CardBody from "components/Card/CardBody.js";
+
+import HumanResourcesData from "assets/data/HR.json";
+import { useHistory, useLocation } from "react-router-dom";
+import RandomUserTableList from "./components/RandomUserTableList";
+import { Typography, CircularProgress } from "@material-ui/core";
+import { firstLetterUpperCase } from "utils";
 
 const styles = {
   cardCategoryWhite: {
@@ -37,75 +44,91 @@ const styles = {
       lineHeight: "1",
     },
   },
+  randomUsers: {
+    display: "flex",
+    alignContent: "center",
+    justifyContent: "center",
+  },
 };
 
 const useStyles = makeStyles(styles);
 
 export default function TableList() {
   const classes = useStyles();
+  const history = useHistory();
+  const location = useLocation();
+
+  const [error, setError] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [selectedRow, setSelectedRow] = useState(null);
+  const [humanResourcesData, setHumanResourcesData] = useState(null);
+
+  const fetchHumanResourceData = useCallback(async () => {
+    try {
+      setError(false);
+      setLoading(true);
+
+      const data = await Promise.resolve(HumanResourcesData);
+      // formate data accordingly to the Table props
+      const formatData = data.departments.map((v) => [
+        `${v.manager.name.first} ${v.manager.name.last}`,
+        firstLetterUpperCase(v.department),
+        v.location,
+      ]);
+      setHumanResourcesData(formatData);
+    } catch (error) {
+      setError(true);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const onSelectedEntity = useCallback((entity) => {
+    if (entity === null) return;
+
+    history.replace({
+      pathname: location.pathname,
+      search: `?employee=${entity[0]}&department=${entity[1]}`,
+    });
+  }, []);
+
+  useEffect(() => {
+    fetchHumanResourceData();
+  }, [fetchHumanResourceData]);
+
+  useEffect(() => {
+    if (!location.search) return;
+
+    const entity = new URLSearchParams(location.search).get("employee");
+    setSelectedRow(entity);
+  }, [location]);
+
+  if (loading) return <CircularProgress />;
+  if (error || !humanResourcesData)
+    return <Typography variant="h6"> Oops! Something went wrong... 😞 </Typography>;
+
   return (
     <GridContainer>
       <GridItem xs={12} sm={12} md={12}>
         <Card>
           <CardHeader color="primary">
-            <h4 className={classes.cardTitleWhite}>Simple Table</h4>
-            <p className={classes.cardCategoryWhite}>
-              Here is a subtitle for this table
-            </p>
+            <h4 className={classes.cardTitleWhite}> Connect Mor Aptitude Test </h4>
           </CardHeader>
           <CardBody>
             <Table
               tableHeaderColor="primary"
-              tableHead={["Name", "Country", "City", "Salary"]}
-              tableData={[
-                ["Dakota Rice", "Niger", "Oud-Turnhout", "$36,738"],
-                ["Minerva Hooper", "Curaçao", "Sinaai-Waas", "$23,789"],
-                ["Sage Rodriguez", "Netherlands", "Baileux", "$56,142"],
-                ["Philip Chaney", "Korea, South", "Overland Park", "$38,735"],
-                ["Doris Greene", "Malawi", "Feldkirchen in Kärnten", "$63,542"],
-                ["Mason Porter", "Chile", "Gloucester", "$78,615"],
-              ]}
+              selectedRow={selectedRow}
+              tableData={humanResourcesData}
+              onSelectedEntity={onSelectedEntity}
+              tableHead={["Name", "Department", "Location"]}
             />
           </CardBody>
         </Card>
       </GridItem>
       <GridItem xs={12} sm={12} md={12}>
-        <Card plain>
-          <CardHeader plain color="primary">
-            <h4 className={classes.cardTitleWhite}>
-              Table on Plain Background
-            </h4>
-            <p className={classes.cardCategoryWhite}>
-              Here is a subtitle for this table
-            </p>
-          </CardHeader>
-          <CardBody>
-            <Table
-              tableHeaderColor="primary"
-              tableHead={["ID", "Name", "Country", "City", "Salary"]}
-              tableData={[
-                ["1", "Dakota Rice", "$36,738", "Niger", "Oud-Turnhout"],
-                ["2", "Minerva Hooper", "$23,789", "Curaçao", "Sinaai-Waas"],
-                ["3", "Sage Rodriguez", "$56,142", "Netherlands", "Baileux"],
-                [
-                  "4",
-                  "Philip Chaney",
-                  "$38,735",
-                  "Korea, South",
-                  "Overland Park",
-                ],
-                [
-                  "5",
-                  "Doris Greene",
-                  "$63,542",
-                  "Malawi",
-                  "Feldkirchen in Kärnten",
-                ],
-                ["6", "Mason Porter", "$78,615", "Chile", "Gloucester"],
-              ]}
-            />
-          </CardBody>
-        </Card>
+        <div className={classes.randomUsers}>
+          <RandomUserTableList />
+        </div>
       </GridItem>
     </GridContainer>
   );
