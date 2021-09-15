@@ -23,18 +23,21 @@ export default function CustomTable(props) {
     // unselect it;
     if (selectedEntity?.[0] === entity[0]) {
       setSelectedEntity(null);
-      onSelectedEntity(null);
+      onSelectedEntity?.(null);
       return;
     }
 
     setSelectedEntity(entity);
-    onSelectedEntity(entity);
+    onSelectedEntity?.(entity);
   };
 
   const isRowSelected = (entity) => {
     if (!selectedEntity) return false;
     return selectedEntity[0] === entity[0];
   };
+
+  // https://reactjs.org/docs/jsx-in-depth.html#booleans-null-and-undefined-are-ignored
+  const hasData = tableData && tableData.length > 0;
 
   return (
     <div className={classes.tableResponsive}>
@@ -54,29 +57,33 @@ export default function CustomTable(props) {
           </TableHead>
         ) : null}
         <TableBody>
-          {tableData.map((prop, key) => {
-            return (
-              <TableRow key={key} className={classes.tableBodyRow}>
-                <Checkbox
-                  checked={isRowSelected(prop)}
-                  inputProps={{
-                    "aria-labelledby": `checkbox-id-for-${prop[0]
-                      .split(" ")
-                      .join("-")
-                      .toLowerCase()}`,
-                  }}
-                  onClick={() => onSelect(prop)}
-                />
-                {prop.map((prop, key) => {
-                  return (
-                    <TableCell className={classes.tableCell} key={key}>
-                      {prop}
-                    </TableCell>
-                  );
-                })}
-              </TableRow>
-            );
-          })}
+          {!hasData && "No Data"}
+
+          {hasData &&
+            tableData.map((prop, key) => {
+              return (
+                <TableRow key={key} className={classes.tableBodyRow}>
+                  <Checkbox
+                    checked={isRowSelected(prop)}
+                    onClick={() => onSelect(prop)}
+                    disabled={!onSelectedEntity}
+                    inputProps={{
+                      "aria-labelledby": `checkbox-id-for-${prop[0]
+                        .split(" ")
+                        .join("-")
+                        .toLowerCase()}`,
+                    }}
+                  />
+                  {prop.map((prop, key) => {
+                    return (
+                      <TableCell className={classes.tableCell} key={key}>
+                        {prop}
+                      </TableCell>
+                    );
+                  })}
+                </TableRow>
+              );
+            })}
         </TableBody>
       </Table>
     </div>

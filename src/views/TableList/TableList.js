@@ -49,8 +49,11 @@ export default function TableList() {
 
   const [error, setError] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [humanResourcesData, setHumanResourcesData] = useState(null);
   const [selectedEntity, setSelectedEntity] = useState(null);
+  const [humanResourcesData, setHumanResourcesData] = useState(null);
+  const [randomUsers, setRandomUsers] = useState(null);
+  const [loadingHRDepartments, setLoadingHRDepartments] = useState(false);
+  const [errorLoadingHRDepartments, setErrorLoadingHRDepartments] = useState(false);
 
   const fetchHumanResourceData = useCallback(async () => {
     try {
@@ -58,8 +61,7 @@ export default function TableList() {
       setLoading(true);
 
       const data = await Promise.resolve(HumanResourcesData);
-
-      // MUI Table accepts and of Stirng
+      // formate data accordingly to the Table props
       const formatData = data.departments.map((v) => [
         `${v.manager.name.first} ${v.manager.name.last}`,
         `${v.department.slice(0, 1).toUpperCase()}${v.department.slice(1)}`,
@@ -73,14 +75,40 @@ export default function TableList() {
     }
   }, []);
 
-  const onSelectedEntity = (entity) => {
+  const fetchRandomUser = useCallback(async (department) => {
+    try {
+      setLoadingHRDepartments(true);
+      setErrorLoadingHRDepartments(false);
+      const response = await fetch(`https://randomuser.me/api/?seed=${department}&results=10`);
+      response.parsedBody = await response.json();
+      // formate data accordingly to the Table props
+      const formatData = response.parsedBody.results.map((v) => [
+        v.login.uuid,
+        `${v.name.first} ${v.name.last}`,
+        v.dob.age,
+        v.gender,
+        v.location.country,
+      ]);
+      setRandomUsers(formatData);
+    } catch (error) {
+      setErrorLoadingHRDepartments(true);
+    } finally {
+      setLoadingHRDepartments(false);
+    }
+  }, []);
+
+  const onSelectedEntity = useCallback((entity) => {
     setSelectedEntity(entity);
-  };
+  }, []);
 
   useEffect(() => {
     fetchHumanResourceData();
-    console.log("-----------------");
   }, [fetchHumanResourceData]);
+
+  useEffect(() => {
+    if (!selectedEntity) return;
+    fetchRandomUser(selectedEntity[1]);
+  }, [selectedEntity]);
 
   if (loading) return "loading...";
   if (error) return "oops! Something went wrong...";
@@ -112,18 +140,17 @@ export default function TableList() {
             <p className={classes.cardCategoryWhite}>Here is a subtitle for this table</p>
           </CardHeader>
           <CardBody>
-            <Table
-              tableHeaderColor="primary"
-              tableHead={["ID", "Name", "Country", "City", "Salary"]}
-              tableData={[
-                ["1", "Dakota Rice", "$36,738", "Niger", "Oud-Turnhout"],
-                ["2", "Minerva Hooper", "$23,789", "Curaçao", "Sinaai-Waas"],
-                ["3", "Sage Rodriguez", "$56,142", "Netherlands", "Baileux"],
-                ["4", "Philip Chaney", "$38,735", "Korea, South", "Overland Park"],
-                ["5", "Doris Greene", "$63,542", "Malawi", "Feldkirchen in Kärnten"],
-                ["6", "Mason Porter", "$78,615", "Chile", "Gloucester"],
-              ]}
-            />
+            {errorLoadingHRDepartments && "Oops! Something went wrong"}
+
+            {loadingHRDepartments ? (
+              "loading..."
+            ) : (
+              <Table
+                tableHeaderColor="primary"
+                tableHead={["ID", "Name", "Age", "Gender", "Country"]}
+                tableData={randomUsers}
+              />
+            )}
           </CardBody>
         </Card>
       </GridItem>
