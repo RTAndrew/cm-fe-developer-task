@@ -12,6 +12,9 @@ import CardBody from "components/Card/CardBody.js";
 
 import HumanResourcesData from "assets/data/HR.json";
 import { useHistory, useLocation } from "react-router-dom";
+import RandomUserTableList from "./components/RandomUserTableList";
+import { Typography, CircularProgress } from "@material-ui/core";
+import { firstLetterUpperCase } from "utils";
 
 const styles = {
   cardCategoryWhite: {
@@ -41,24 +44,24 @@ const styles = {
       lineHeight: "1",
     },
   },
+  randomUsers: {
+    display: "flex",
+    alignContent: "center",
+    justifyContent: "center",
+  },
 };
 
 const useStyles = makeStyles(styles);
 
 export default function TableList() {
   const classes = useStyles();
-
   const history = useHistory();
   const location = useLocation();
 
   const [error, setError] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [selectedEntity, setSelectedEntity] = useState(null);
-  const [humanResourcesData, setHumanResourcesData] = useState(null);
-  const [randomUsers, setRandomUsers] = useState(null);
-  const [loadingHRDepartments, setLoadingHRDepartments] = useState(false);
-  const [errorLoadingHRDepartments, setErrorLoadingHRDepartments] = useState(false);
   const [selectedRow, setSelectedRow] = useState(null);
+  const [humanResourcesData, setHumanResourcesData] = useState(null);
 
   const fetchHumanResourceData = useCallback(async () => {
     try {
@@ -69,7 +72,7 @@ export default function TableList() {
       // formate data accordingly to the Table props
       const formatData = data.departments.map((v) => [
         `${v.manager.name.first} ${v.manager.name.last}`,
-        `${v.department.slice(0, 1).toUpperCase()}${v.department.slice(1)}`,
+        firstLetterUpperCase(v.department),
         v.location,
       ]);
       setHumanResourcesData(formatData);
@@ -80,45 +83,12 @@ export default function TableList() {
     }
   }, []);
 
-  const fetchRandomUser = useCallback(async (department) => {
-    try {
-      setLoadingHRDepartments(true);
-      setErrorLoadingHRDepartments(false);
-      const response = await fetch(`https://randomuser.me/api/?seed=${department}&results=10`);
-      response.parsedBody = await response.json();
-      // formate data accordingly to the Table props
-      const formatData = response.parsedBody.results.map((v) => [
-        v.login.uuid,
-        `${v.name.first} ${v.name.last}`,
-        v.dob.age,
-        v.gender,
-        v.location.country,
-      ]);
-      setRandomUsers(formatData);
-    } catch (error) {
-      setErrorLoadingHRDepartments(true);
-    } finally {
-      setLoadingHRDepartments(false);
-    }
-  }, []);
-
   const onSelectedEntity = useCallback((entity) => {
-    setSelectedEntity(entity);
-
     if (entity === null) return;
+
     history.replace({
       pathname: location.pathname,
       search: `?employee=${entity[0]}&department=${entity[1]}`,
-    });
-  }, []);
-
-  const onDeselectedEntity = useCallback((entity) => {
-    setSelectedEntity(null);
-    setSelectedRow(null);
-
-    history.replace({
-      pathname: location.pathname,
-      search: "",
     });
   }, []);
 
@@ -130,55 +100,35 @@ export default function TableList() {
     if (!location.search) return;
 
     const entity = new URLSearchParams(location.search).get("employee");
-    const department = new URLSearchParams(location.search).get("department");
     setSelectedRow(entity);
-    fetchRandomUser(department);
   }, [location]);
 
-  if (loading) return "loading...";
-  if (error) return "oops! Something went wrong...";
+  if (loading) return <CircularProgress />;
+  if (error || !humanResourcesData)
+    return <Typography variant="h6"> Oops! Something went wrong... 😞 </Typography>;
 
   return (
     <GridContainer>
       <GridItem xs={12} sm={12} md={12}>
-        {humanResourcesData && (
-          <Card>
-            <CardHeader color="primary">
-              <h4 className={classes.cardTitleWhite}> Connect Mor Test </h4>
-              <p className={classes.cardCategoryWhite}>In this section</p>
-            </CardHeader>
-            <CardBody>
-              <Table
-                tableHeaderColor="primary"
-                selectedRow={selectedRow}
-                tableData={humanResourcesData}
-                onSelectedEntity={onSelectedEntity}
-                onDeselectedEntity={onDeselectedEntity}
-                tableHead={["Name", "Department", "Location"]}
-              />
-            </CardBody>
-          </Card>
-        )}
-      </GridItem>
-      <GridItem xs={12} sm={12} md={12}>
-        <Card plain>
-          <CardHeader plain color="primary">
-            <h4 className={classes.cardTitleWhite}>Table on Plain Background</h4>
-            <p className={classes.cardCategoryWhite}>Here is a subtitle for this table</p>
+        <Card>
+          <CardHeader color="primary">
+            <h4 className={classes.cardTitleWhite}> Connect Mor Aptitude Test </h4>
           </CardHeader>
-          {errorLoadingHRDepartments && "Oops! Something went wrong"}
           <CardBody>
-            {loadingHRDepartments ? (
-              "loading..."
-            ) : (
-              <Table
-                tableHeaderColor="primary"
-                tableHead={["ID", "Name", "Age", "Gender", "Country"]}
-                tableData={randomUsers}
-              />
-            )}
+            <Table
+              tableHeaderColor="primary"
+              selectedRow={selectedRow}
+              tableData={humanResourcesData}
+              onSelectedEntity={onSelectedEntity}
+              tableHead={["Name", "Department", "Location"]}
+            />
           </CardBody>
         </Card>
+      </GridItem>
+      <GridItem xs={12} sm={12} md={12}>
+        <div className={classes.randomUsers}>
+          <RandomUserTableList />
+        </div>
       </GridItem>
     </GridContainer>
   );

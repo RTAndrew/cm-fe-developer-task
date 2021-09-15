@@ -15,25 +15,11 @@ const useStyles = makeStyles(styles);
 
 export default function CustomTable(props) {
   const classes = useStyles();
-  const {
-    tableHead,
-    tableData,
-    tableHeaderColor,
-    onSelectedEntity,
-    onDeselectedEntity,
-    selectedRow,
-  } = props;
+  const { tableHead, tableData, tableHeaderColor, onSelectedEntity, selectedRow } = props;
   const [selectedEntity, setSelectedEntity] = useState(null);
 
   const onSelect = (entity) => {
-    // if it is already selected
-    // unselect it;
-    if (selectedEntity?.[0] === entity[0]) {
-      setSelectedEntity(null);
-      onSelectedEntity?.(null);
-      onDeselectedEntity?.(entity);
-      return;
-    }
+    if (selectedEntity?.[0] === entity[0]) return;
 
     setSelectedEntity(entity);
     onSelectedEntity?.(entity);
@@ -69,7 +55,7 @@ export default function CustomTable(props) {
           </TableHead>
         ) : null}
         <TableBody>
-          {!hasData && "No Data"}
+          {!hasData && "No Data 😞"}
 
           {hasData &&
             tableData.map((prop, key) => {
